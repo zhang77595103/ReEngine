@@ -2,7 +2,7 @@
 #include "NFA.h"
 
 int main() {
-    NFA nfa("a(b|c|d)e");
+    NFA nfa("(ab)+e.");
     nfa.BFSPrint();
     return 0;
 }

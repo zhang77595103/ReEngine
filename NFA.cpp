@@ -6,9 +6,11 @@
 enum {
     CONCATENATION = -1,
     ALTERNATION = -2,
-    CLOSURE = -3,
-
-    EPSILON = -4
+    QUESTION = -3,
+    CLOSURE = -4,
+    PLUS = -5,
+    POINT = -6,
+    EPSILON = -7
 };
 
 void NFA::construct(const std::string &pattern){
@@ -69,6 +71,18 @@ void NFA::re2post(const std::string &pattern, std::string &postRe){
                 }
                 ++numberOfOr;
                 break;
+            case '?':
+                postRe += QUESTION;
+                break;
+            case '*':
+                postRe += CLOSURE;
+                break;
+            case '+':
+                postRe += PLUS;
+                break;
+            case '.':
+                ch = POINT;
+                // drop
             default:
                 if(numberOfAtom > 1){
                     --numberOfAtom;
@@ -131,6 +145,22 @@ void NFA::postRe2nfa(const std::string &postRe){
                 previous.getTailNode()->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, tail));
                 next.getTailNode()->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, tail));
                 nodesStack.push(Nodes(head, tail));
+                break;
+            }
+            case QUESTION:{
+                auto& ref = nodesStack.top();
+                ref.getHeadNode()->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, ref.getTailNode()));
+                break;
+            }
+            case CLOSURE:{
+                auto& ref = nodesStack.top();
+                ref.getHeadNode()->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, ref.getTailNode()));
+                ref.getTailNode()->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, ref.getHeadNode()));
+                break;
+            }
+            case PLUS:{
+                auto& ref = nodesStack.top();
+                ref.getTailNode()->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, ref.getHeadNode()));
                 break;
             }
             default:
