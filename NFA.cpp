@@ -192,9 +192,6 @@ void NFA::postRe2nfa(const std::string &postRe){
             default:
                 auto headNode = MemPool::Give_Me_NFA_Node();
                 auto tailNode = MemPool::Give_Me_NFA_Node();
-                if(ch == 'b'){
-                    printf("%d %d\n", headNode->getId(), tailNode->getId());
-                }
 
                 headNode->getEdgeListAt(ch).push_back(MemPool::Give_Me_NFA_Edge(ch, tailNode));
                 nodesStack.push(NFA_Segment(headNode, tailNode));
