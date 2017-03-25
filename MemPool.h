@@ -2,50 +2,35 @@
 #ifndef REENGINE_MEMPOOL_H
 #define REENGINE_MEMPOOL_H
 
-
 #include <cstdlib>
-#include "Node.h"
+
+#include "NFA_Node.h"
 #include "Edge.h"
-#include "Nodes.h"
+#include "DFA_Node.h"
 
 class MemPool {
 private:
     const static int SIZE = 100;
-    PNode nodePool = nullptr;
-    PEdge edgePool = nullptr;
+    static Ptr_NFA_Node nfaNodePool;
+    static Ptr_DFA_Node dfaNodePool;
+    static Ptr_NFA_Node_Edge nfaEdgePool;
+    static Ptr_DFA_Node_Edge dfaEdgePool;
 
-    int nodePos = 0;
-    int edgePos = 0;
+    static int nfaNodePos;
+    static int dfaNodePos;
+    static int nfaEdgePos;
+    static int dfaEdgePos;
 
 public:
-    MemPool() {
-        nodePool = new Node[SIZE];
-        edgePool = new Edge[SIZE];
-    }
+    static void Init();
 
-    PNode giveMeNode(){
-        if(nodePos == SIZE){
-            printf("Node Pool Out Of Memory!\n");
-            exit(0);
-        }
-        return &nodePool[nodePos++];
-    }
+    static Ptr_NFA_Node Give_Me_NFA_Node();
+    static Ptr_DFA_Node Give_Me_DFA_Node();
 
-    PEdge giveMeEdge(char value, PNode to){
-        if(edgePos == SIZE){
-            printf("Edge Pool Out Of Memory!\n");
-            exit(0);
-        }
+    static Ptr_NFA_Node_Edge Give_Me_NFA_Edge(char value, Ptr_NFA_Node to);
+    static Ptr_DFA_Node_Edge Give_Me_DFA_Edge(char value, Ptr_DFA_Node to);
 
-        edgePool[edgePos].setValue(value);
-        edgePool[edgePos].setTo(to);
-        return &edgePool[edgePos++];
-    }
-
-    ~MemPool(){
-        delete[] nodePool;
-        delete[] edgePool;
-    }
+    static void Destroy();
 };
 
 #endif //REENGINE_MEMPOOL_H

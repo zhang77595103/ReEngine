@@ -3,21 +3,24 @@
 
 #include <string>
 #include "MemPool.h"
-#include "Nodes.h"
+#include "NFA_Node.h"
 
 class NFA {
 
 public:
     NFA(const std::string& pattern)
-        : pNodes(nullptr){
+        : segment(nullptr){
         construct(pattern);
     }
 
-    bool match(const std::string& target);
 
-    void BFSPrint(int size = 100);
 
-    ~NFA(){ if(pNodes != nullptr)   delete  pNodes; }
+    void BFSPrint(unsigned int size = 64);
+
+    ~NFA(){ if(segment != nullptr)   delete  segment; }
+
+    const Ptr_NFA_Segment getSegment() const { return segment; }
+
 
 private:
 
@@ -28,9 +31,7 @@ private:
     void postRe2nfa(const std::string &postRe);
 
 private:
-    PNodes pNodes;
-
-    MemPool pool;
+    Ptr_NFA_Segment segment;
 };
 
 #endif //REENGINE_NFA_H

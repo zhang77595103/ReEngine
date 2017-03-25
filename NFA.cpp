@@ -3,21 +3,13 @@
 #include <stack>
 #include "NFA.h"
 
-enum {
-    CONCATENATION = -1,
-    ALTERNATION = -2,
-    QUESTION = -3,
-    CLOSURE = -4,
-    PLUS = -5,
-    POINT = -6,
-    EPSILON = -7
-};
 
 void NFA::construct(const std::string &pattern){
     std::string postRe;
     re2post(pattern, postRe);
     postRe2nfa(postRe);
 }
+
 
 void NFA::re2post(const std::string &pattern, std::string &postRe){
     std::stack<std::pair<int, int>> bracketStack;
@@ -101,14 +93,26 @@ void NFA::re2post(const std::string &pattern, std::string &postRe){
         postRe += ALTERNATION;
     }
 
-#if 0
+#if 1
     for(auto ch : postRe){
         switch (ch){
             case CONCATENATION:
-                std::cout << ".";
+                std::cout << "&";
                 break;
             case ALTERNATION:
                 std::cout << '|';
+                break;
+            case QUESTION:
+                std::cout << '?';
+                break;
+            case CLOSURE:
+                std::cout << '*';
+                break;
+            case PLUS:
+                std::cout << '+';
+                break;
+            case POINT:
+                std::cout << '.';
                 break;
             default:
                 std::cout << ch;
@@ -119,7 +123,7 @@ void NFA::re2post(const std::string &pattern, std::string &postRe){
 }
 
 void NFA::postRe2nfa(const std::string &postRe){
-    std::stack<Nodes> nodesStack;
+    std::stack<NFA_Segment> nodesStack;
     for(auto ch : postRe){
         switch (ch){
             case CONCATENATION: {
@@ -128,8 +132,8 @@ void NFA::postRe2nfa(const std::string &postRe){
                 auto previous = nodesStack.top();
                 nodesStack.pop();
 
-                previous.getTailNode()->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, next.getHeadNode()));
-                nodesStack.push(Nodes(previous.getHeadNode(), next.getTailNode()));
+                previous.getTailNode()->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, next.getHeadNode()));
+                nodesStack.push(NFA_Segment(previous.getHeadNode(), next.getTailNode()));
                 break;
             }
             case ALTERNATION: {
@@ -138,52 +142,74 @@ void NFA::postRe2nfa(const std::string &postRe){
                 auto previous = nodesStack.top();
                 nodesStack.pop();
 
-                auto head = pool.giveMeNode();
-                auto tail = pool.giveMeNode();
-                head->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, previous.getHeadNode()));
-                head->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, next.getHeadNode()));
-                previous.getTailNode()->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, tail));
-                next.getTailNode()->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, tail));
-                nodesStack.push(Nodes(head, tail));
+                auto head = MemPool::Give_Me_NFA_Node();
+                auto tail = MemPool::Give_Me_NFA_Node();
+                head->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, previous.getHeadNode()));
+                head->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, next.getHeadNode()));
+                previous.getTailNode()->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, tail));
+                next.getTailNode()->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, tail));
+                nodesStack.push(NFA_Segment(head, tail));
                 break;
             }
             case QUESTION:{
                 auto& ref = nodesStack.top();
-                ref.getHeadNode()->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, ref.getTailNode()));
+                auto head = MemPool::Give_Me_NFA_Node();
+                auto tail = MemPool::Give_Me_NFA_Node();
+                head->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, tail));
+                head->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, ref.getHeadNode()));
+                ref.getTailNode()->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, tail));
+                nodesStack.pop();
+                nodesStack.push(NFA_Segment(head, tail));
                 break;
             }
             case CLOSURE:{
                 auto& ref = nodesStack.top();
-                ref.getHeadNode()->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, ref.getTailNode()));
-                ref.getTailNode()->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, ref.getHeadNode()));
+                // for the original one : connect from tail back to head
+                ref.getTailNode()->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, ref.getHeadNode()));
+
+                auto head = MemPool::Give_Me_NFA_Node();
+                auto tail = MemPool::Give_Me_NFA_Node();
+                head->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, tail));
+                head->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, ref.getHeadNode()));
+                ref.getTailNode()->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, tail));
+                nodesStack.pop();
+                nodesStack.push(NFA_Segment(head, tail));
                 break;
             }
             case PLUS:{
                 auto& ref = nodesStack.top();
-                ref.getTailNode()->getEdgeListAt(EPSILON).push_back(pool.giveMeEdge(EPSILON, ref.getHeadNode()));
+                // for the original one : connect from tail back to head
+                ref.getTailNode()->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, ref.getHeadNode()));
+
+                auto head = MemPool::Give_Me_NFA_Node();
+                auto tail = MemPool::Give_Me_NFA_Node();
+                head->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, ref.getHeadNode()));
+                ref.getTailNode()->getEdgeListAt(EPSILON).push_back(MemPool::Give_Me_NFA_Edge(EPSILON, tail));
+                nodesStack.pop();
+                nodesStack.push(NFA_Segment(head, tail));
                 break;
             }
             default:
-                auto headNode = pool.giveMeNode();
-                auto tailNode = pool.giveMeNode();
-                headNode->getEdgeListAt(ch).push_back(pool.giveMeEdge(ch, tailNode));
-                nodesStack.push(Nodes(headNode, tailNode));
+                auto headNode = MemPool::Give_Me_NFA_Node();
+                auto tailNode = MemPool::Give_Me_NFA_Node();
+                if(ch == 'b'){
+                    printf("%d %d\n", headNode->getId(), tailNode->getId());
+                }
+
+                headNode->getEdgeListAt(ch).push_back(MemPool::Give_Me_NFA_Edge(ch, tailNode));
+                nodesStack.push(NFA_Segment(headNode, tailNode));
         }
     }
 
-    pNodes = new Nodes(nodesStack.top());
-    pNodes->getTailNode()->setIsFinished(true);
+    segment = new NFA_Segment(nodesStack.top());
+    segment->getTailNode()->setIsFinished(true);
 }
 
-bool NFA::match(const std::string& target){
-    return false;
-}
-
-void NFA::BFSPrint(int size){
+void NFA::BFSPrint(unsigned int size){
     char alreadyVisited[size];
     memset(alreadyVisited, 0, size);
-    std::queue<PNode> toVisited;
-    toVisited.push(pNodes->getHeadNode());
+    std::queue<Ptr_NFA_Node> toVisited;
+    toVisited.push(segment->getHeadNode());
     while (true){
         if(toVisited.empty())   return;
         auto curNode = toVisited.front();
@@ -192,14 +218,16 @@ void NFA::BFSPrint(int size){
         if(alreadyVisited[curNode->getId()])  continue;
 
         alreadyVisited[curNode->getId()] = true;
-        printf("Node %d: \n", curNode->getId());
+        printf("NFA_Node %d: \n", curNode->getId());
         if(curNode->isIsFinished()){
-            printf("\tFinish Node %d!\n", curNode->getId());
+            printf("\tFinish NFA_Node %d!\n", curNode->getId());
         }
         for(auto eachList : curNode->getEdgeList()){
             for(auto eachEdge : eachList.second){
                 printf("\t -(%c)> %d\n",
-                       eachEdge->getValue() == EPSILON ? '-' : eachEdge->getValue(),
+                       eachEdge->getValue() == EPSILON ? '-' :
+                       eachEdge->getValue() == POINT ? '.' :
+                       eachEdge->getValue(),
                        eachEdge->getTo()->getId());
                 toVisited.push(eachEdge->getTo());
             }

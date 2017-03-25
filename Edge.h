@@ -1,25 +1,19 @@
-
 #ifndef REENGINE_EDGE_H
 #define REENGINE_EDGE_H
 
-class Edge;
-using PEdge = Edge*;
-class Node;
-using PNode = Node*;
-
-
+template <typename PNodeType>
 class Edge {
 public:
     char getValue() const { return value; }
     void setValue(char value) { Edge::value = value; }
 
-    const PNode getTo() const { return to; }
-    void setTo(PNode to) { Edge::to = to; }
+    const PNodeType getTo() const { return to; }
+    void setTo(PNodeType to) { Edge::to = to; }
 
 
 private:
     char value;
-    PNode to;
+    PNodeType to;
 
 };
 
